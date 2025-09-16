@@ -13,7 +13,7 @@
    
    // Ai가 만들어 주는 홍보용 이미지 생성기, SweetCreater! 사용하러 가기 <br>
    ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓<br>
-   👉  <a href="/SweetWebApps/SweetWebApps-Website/SweetCreater.html"> SweetCreater! </a><br>
+   👉  <a href="/SweetWebApps/SweetWebApps-Website/SweetCreater.html"> SweetCreater!(Ver.0.10) </a><br>
       
    # 중요 사항
       SweetCreater! 웹앱 페이지는 Gemini AI 서비스를 제공하되, 개발자 계정에 연동된 Gemini 서비스 입니다.
