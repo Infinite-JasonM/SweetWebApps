@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
-    <!-- SweetCreator.html  Ver.0.10 -->
+    <!-- SweetCreator.html  Ver.0.11 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Creator - Sweet Ai Ad Creater!(Ver.0.10)</title>
+    <title>Sweet Creator - Sweet Ai Ad Creater!(Ver.0.01)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -44,7 +44,7 @@
         <header class="text-center mb-6 flex justify-between items-center">
             <div></div>
             <div>
-                <h1 class="text-3xl md:text-4xl font-black text-gray-800">Sweet Creator(Ver.0.10)</h1>
+                <h1 class="text-3xl md:text-4xl font-black text-gray-800">Sweet Creator(Ver.0.01)</h1>
                 <p class="text-gray-500 mt-2">달콤한 아이디어를 멋진 광고로 만들어보세요.</p>
             </div>
             <div id="user-profile" class="hidden text-right">
@@ -171,10 +171,10 @@
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 mb-2">위치</label>
                                 <div id="logo-position-controls" class="grid grid-cols-2 gap-1 rounded-lg bg-gray-200 p-1">
-                                    <div><input type="radio" name="logo-pos" value="tl" id="pos-tl" class="sr-only"><label for="pos-tl" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">좌측 상단</label></div>
+                                    <div><input type="radio" name="logo-pos" value="tl" id="pos-tl" class="sr-only" checked><label for="pos-tl" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">좌측 상단</label></div>
                                     <div><input type="radio" name="logo-pos" value="tr" id="pos-tr" class="sr-only"><label for="pos-tr" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">우측 상단</label></div>
                                     <div><input type="radio" name="logo-pos" value="bl" id="pos-bl" class="sr-only"><label for="pos-bl" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">좌측 하단</label></div>
-                                    <div><input type="radio" name="logo-pos" value="br" id="pos-br" class="sr-only" checked><label for="pos-br" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">우측 하단</label></div>
+                                    <div><input type="radio" name="logo-pos" value="br" id="pos-br" class="sr-only"><label for="pos-br" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">우측 하단</label></div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
@@ -297,8 +297,6 @@
         let uploadedImageBase64 = null, uploadedImageType = null,
             originalImageSrc = null, editedImageSrc = null, uploadedUserLogoSrc = null;
 
-        let isAdmin = false;
-
         function getApiKey() {
             return sessionStorage.getItem('userApiKey');
         }
@@ -351,6 +349,7 @@
                 workspace.classList.remove('hidden');
                 toggleTextBtn.classList.remove('hidden');
                 mainLogoOverlay.classList.remove('hidden');
+                toggleMainLogoBtn.classList.remove('hidden');
 
             } catch (error) {
                 console.error('아이디어 분석 오류:', error);
@@ -456,7 +455,7 @@
         function setActiveThumbnail(active) { originalThumbWrapper.classList.toggle('border-blue-500', active === 'original'); originalThumbWrapper.classList.toggle('border-transparent', active !== 'original'); editedThumbWrapper.classList.toggle('border-blue-500', active === 'edited'); editedThumbWrapper.classList.toggle('border-transparent', active !== 'edited'); }
         originalThumbWrapper.addEventListener('click', () => { if (originalImageSrc) { generatedImage.src = originalImageSrc; setActiveThumbnail('original'); } });
         editedThumbWrapper.addEventListener('click', () => { if (editedImageSrc) { generatedImage.src = editedImageSrc; setActiveThumbnail('edited'); } });
-        function handleUserLogoFile(file) { if (!file.type.startsWith('image/')) { showMessage('로고는 이미지 파일만 가능합니다.'); return; } const reader = new FileReader(); reader.onload = (event) => { uploadedUserLogoSrc = event.target.result; userLogoOverlay.src = uploadedUserLogoSrc; logoPreviewImg.src = uploadedUserLogoSrc; userLogoOverlay.classList.remove('hidden'); toggleUserLogoBtn.classList.remove('hidden'); logoPreviewContainer.classList.remove('hidden'); logoUploadBtn.classList.add('hidden'); document.querySelector('input[name="logo-pos"][value="br"]').checked = true; userLogoOverlay.className = 'absolute transition-all duration-300 bottom-4 right-4'; userLogoOverlay.style.cssText += 'max-width: 15%; max-height: 15%;'; updateUserLogoEffect(); }; reader.readAsDataURL(file); }
+        function handleUserLogoFile(file) { if (!file.type.startsWith('image/')) { showMessage('로고는 이미지 파일만 가능합니다.'); return; } const reader = new FileReader(); reader.onload = (event) => { uploadedUserLogoSrc = event.target.result; userLogoOverlay.src = uploadedUserLogoSrc; logoPreviewImg.src = uploadedUserLogoSrc; userLogoOverlay.classList.remove('hidden'); toggleUserLogoBtn.classList.remove('hidden'); logoPreviewContainer.classList.remove('hidden'); logoUploadBtn.classList.add('hidden'); document.querySelector('input[name="logo-pos"][value="tl"]').checked = true; userLogoOverlay.className = 'absolute transition-all duration-300 top-4 left-4'; userLogoOverlay.style.cssText += 'max-width: 15%; max-height: 15%;'; updateUserLogoEffect(); }; reader.readAsDataURL(file); }
         logoUploadBtn.addEventListener('click', () => logoInput.click());
         logoInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) handleUserLogoFile(e.target.files[0]); });
         logoUploadBtn.addEventListener('dragover', (e) => { e.preventDefault(); logoUploadBtn.classList.add('dragover'); });
@@ -471,7 +470,31 @@
         toggleMainLogoBtn.addEventListener('click', () => { const isHidden = mainLogoOverlay.classList.toggle('hidden'); toggleMainLogoBtn.textContent = isHidden ? 'SC 로고 보이기' : 'SC 로고 숨기기'; });
         exportImageOnlyBtn.addEventListener('click', () => exportHandler(true));
         exportBtn.addEventListener('click', () => exportHandler(false));
-        function exportHandler(imageOnly) { if (!generatedImage.src || generatedImage.classList.contains('hidden')) { showMessage('먼저 이미지를 생성해주세요.'); return; } const mainLogoWasHidden = mainLogoOverlay.classList.contains('hidden'); if (!isAdmin) { mainLogoOverlay.classList.remove('hidden'); } const elementsToHide = []; if (imageOnly) { if (!titleContainer.classList.contains('hidden')) elementsToHide.push(titleContainer); if (!subtitleContainer.classList.contains('hidden')) elementsToHide.push(subtitleContainer); if (uploadedUserLogoSrc && !userLogoOverlay.classList.contains('hidden')) elementsToHide.push(userLogoOverlay); } elementsToHide.forEach(el => el.classList.add('hidden')); const containers = document.querySelectorAll('.text-container'); containers.forEach(c => c.style.borderColor = 'transparent'); html2canvas(resultContainer, { useCORS: true, allowTaint: true, backgroundColor: null }).then(canvas => { const link = document.createElement('a'); link.download = imageOnly ? 'sweet-creator-image.png' : 'sweet-creator-ad.png'; link.href = canvas.toDataURL('image/png'); link.click(); elementsToHide.forEach(el => el.classList.remove('hidden')); if (!isAdmin && mainLogoWasHidden) { mainLogoOverlay.classList.add('hidden'); } }); }
+        function exportHandler(imageOnly) { 
+            if (!generatedImage.src || generatedImage.classList.contains('hidden')) { 
+                showMessage('먼저 이미지를 생성해주세요.'); 
+                return; 
+            } 
+            const elementsToHide = []; 
+            if (imageOnly) { 
+                if (!titleContainer.classList.contains('hidden')) elementsToHide.push(titleContainer); 
+                if (!subtitleContainer.classList.contains('hidden')) elementsToHide.push(subtitleContainer); 
+                if (uploadedUserLogoSrc && !userLogoOverlay.classList.contains('hidden')) elementsToHide.push(userLogoOverlay);
+                if (!mainLogoOverlay.classList.contains('hidden')) elementsToHide.push(mainLogoOverlay);
+            } 
+            elementsToHide.forEach(el => el.classList.add('hidden')); 
+            const containers = document.querySelectorAll('.text-container'); 
+            containers.forEach(c => c.style.borderColor = 'transparent'); 
+            
+            html2canvas(resultContainer, { useCORS: true, allowTaint: true, backgroundColor: null }).then(canvas => { 
+                const link = document.createElement('a'); 
+                link.download = imageOnly ? 'sweet-creator-image.png' : 'sweet-creator-ad.png'; 
+                link.href = canvas.toDataURL('image/png'); 
+                link.click(); 
+                elementsToHide.forEach(el => el.classList.remove('hidden')); 
+                containers.forEach(c => c.style.borderColor = 'transparent'); // Reset on hover might show it again anyway
+            }); 
+        }
         imageDropZone.addEventListener('click', () => imageInput.click());
         imageDropZone.addEventListener('dragover', (e) => { e.preventDefault(); imageDropZone.classList.add('dragover'); });
         imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('dragover'));
@@ -522,17 +545,6 @@
                 loginWall.classList.add('hidden');
                 userName.textContent = user.name;
                 userAvatar.src = user.picture;
-
-                // Admin check: Check email OR URL parameter
-                const ADMIN_EMAIL = "alswotmd@gmail.com"; // ⭐️ 관리자 이메일을 여기에 입력하세요!
-                const urlParams = new URLSearchParams(window.location.search);
-                if (user.email === ADMIN_EMAIL || urlParams.get('admin') === 'true') {
-                    isAdmin = true;
-                    toggleMainLogoBtn.classList.remove('hidden');
-                } else {
-                    isAdmin = false;
-                    toggleMainLogoBtn.classList.add('hidden');
-                }
             }
         }
 
