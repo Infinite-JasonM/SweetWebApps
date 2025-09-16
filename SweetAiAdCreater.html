@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Ai Ad Creater! AI 어시스턴트 광고 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        textarea { resize: vertical; }
+        input[type="color"] {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            width: 100%; height: 2.5rem; padding: 0; border: none;
+            background-color: transparent; cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid #e5e7eb; border-radius: 0.375rem;
+        }
+        #image-drop-zone, #logo-upload-btn {
+            border: 2px dashed #d1d5db; transition: background-color 0.2s;
+        }
+        #image-drop-zone.dragover, #logo-upload-btn.dragover {
+            background-color: #eef2ff; border-color: #4f46e5;
+        }
+        #logo-position-controls input[type="radio"]:checked + label {
+            background-color: #4f46e5;
+            color: white;
+        }
+        /* New styles for draggable/resizable text boxes */
+        .text-container {
+            padding: 5px;
+            border: 1px dashed transparent;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .text-container:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .text-container.dragging, .text-container.resizing {
+            border-color: #3498db;
+            z-index: 20;
+        }
+        .resize-handle {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 21;
+        }
+        .text-container:hover .resize-handle {
+            opacity: 1;
+        }
+        .text-content {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard syntax */
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="container mx-auto max-w-7xl w-full bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Sweet Ai Ad Creater!</h1>
+            <h3 class="text-2xl md:text-2xl font-bold text-gray-800">AI 어시스턴트 광고 생성기</h3>
+            <p class="text-gray-500 mt-2">아이디어를 입력하면 AI가 이미지와 문구를 생성하고, 편리하게 편집할 수 있습니다.</p>
+        </header>
+
+        <main>
+            <!-- 1단계: 아이디어 입력 -->
+            <div id="setup-section" class="mb-6 border-b pb-6">
+                <label for="idea-input" class="block text-lg font-medium text-gray-700 mb-2">1. 아이디어를 자유롭게 입력하세요:</label>
+                <textarea id="idea-input" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 저희 회사는 제주도에서 갓 짜낸 신선한 당근으로 주스를 만듭니다."></textarea>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div class="flex flex-col">
+                        <label class="block text-lg font-medium text-gray-700 mb-2">2. 참고 자료 (선택)</label>
+                        <input type="text" id="reference-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2" placeholder="참고 URL 또는 기업 아이덴티티">
+                        <div id="image-drop-zone" class="w-full p-4 text-center rounded-lg cursor-pointer flex-grow flex flex-col justify-center items-center">
+                            <div id="image-upload-placeholder">
+                                <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4H7z" /></svg>
+                                <p class="mt-1 text-sm text-gray-500">참고 이미지 업로드</p>
+                            </div>
+                            <img id="image-preview" class="hidden max-h-24 mx-auto rounded-lg"/>
+                            <button id="remove-image-btn" class="hidden mt-1 text-xs text-red-500 hover:text-red-700">제거</button>
+                        </div>
+                        <input type="file" id="image-input" class="hidden" accept="image/*">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="block text-lg font-medium text-gray-700 mb-2">3. 로고 업로드 (선택)</label>
+                        <div class="flex-grow flex flex-col">
+                            <div id="logo-upload-btn" class="w-full p-4 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 hover:border-blue-500 flex-grow cursor-pointer">
+                                <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                <span class="mt-1 text-sm">로고 이미지 선택 또는 드래그</span>
+                            </div>
+                            <div id="logo-preview-container" class="hidden text-center mt-2 flex-grow flex flex-col justify-center items-center">
+                                <img id="logo-preview-img" class="h-16 mx-auto bg-gray-200 p-1 rounded">
+                                <button id="remove-logo-btn" class="text-xs text-red-500 hover:text-red-700 mt-1">로고 제거</button>
+                            </div>
+                        </div>
+                        <input type="file" id="logo-input" class="hidden" accept="image/png, image/svg+xml, image/jpeg">
+                    </div>
+                </div>
+
+                <button id="analyze-btn" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center">
+                    <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                    아이디어 분석 및 생성
+                </button>
+            </div>
+            
+            <div id="workspace" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div id="preview-column">
+                    <div class="relative">
+                        <div id="result-container" class="relative w-full aspect-video bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border border-gray-300">
+                            <div id="image-placeholder" class="text-center text-gray-500 p-4">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 R 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <p class="mt-2">생성된 이미지가 여기에 표시됩니다.</p>
+                            </div>
+                            <div id="loader" class="loader hidden"></div>
+                            <img id="generated-image" class="absolute inset-0 w-full h-full object-cover hidden" alt="생성된 이미지">
+                            
+                            <div id="title-container" class="text-container" style="position: absolute; top: 10%; left: 10%; width: 80%; height: 25%;">
+                                <div id="text-overlay-top" class="text-content text-white font-black text-center" style="cursor: move; text-shadow: rgb(0, 0, 0) 2px 2px 8px; font-size: 3rem; white-space: pre-wrap;"></div>
+                                <div class="resize-handle"></div>
+                            </div>
+                            <div id="subtitle-container" class="text-container" style="position: absolute; bottom: 10%; left: 10%; width: 80%; height: 20%;">
+                                <div id="text-overlay-bottom" class="text-content text-white font-bold text-center" style="cursor: move; text-shadow: rgb(0, 0, 0) 2px 2px 8px; font-size: 1.25rem; white-space: pre-wrap;"></div>
+                                <div class="resize-handle"></div>
+                            </div>
+
+                            <img id="logo-overlay" class="absolute hidden transition-all duration-300" style="max-width: 15%; max-height: 15%;">
+                        </div>
+                         <div class="absolute top-2 right-2 flex flex-col gap-1 z-10">
+                            <button id="toggle-text-btn" class="hidden bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-md hover:bg-opacity-75">문구 숨기기</button>
+                            <button id="toggle-logo-btn" class="hidden bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-md hover:bg-opacity-75">로고 숨기기</button>
+                         </div>
+                    </div>
+                    <div id="image-versions-container" class="hidden mt-2 flex justify-center gap-4">
+                        <div id="original-thumb-wrapper" class="cursor-pointer border-2 border-blue-500 rounded-lg p-1">
+                            <img id="original-thumb" src="" class="h-16 w-auto rounded">
+                            <p class="text-xs text-center text-gray-600 mt-1">원본</p>
+                        </div>
+                        <div id="edited-thumb-wrapper" class="hidden cursor-pointer border-2 border-transparent rounded-lg p-1">
+                            <img id="edited-thumb" src="" class="h-16 w-auto rounded">
+                             <p class="text-xs text-center text-gray-600 mt-1">수정본</p>
+                        </div>
+                    </div>
+                    <input type="file" id="edited-image-input" class="hidden" accept="image/*">
+                </div>
+                
+                <div id="controls-column" class="space-y-4">
+                    <div>
+                        <label for="prompt-input-editable" class="block text-lg font-medium text-gray-700 mb-2">이미지 프롬프트 수정:</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="prompt-input-editable" class="flex-grow w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="AI가 생성한 한국어 프롬프트가 여기에 표시됩니다.">
+                            <button id="change-prompt-btn" class="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300 flex items-center justify-center text-sm shrink-0">
+                                <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.885-.666A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566z" clip-rule="evenodd" /></svg>
+                                바꾸기
+                            </button>
+                            <button id="regenerate-image-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center text-sm shrink-0">
+                                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5" /></svg>
+                                다시 생성
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <label class="block text-base font-medium text-gray-700 mb-2">타이틀 수정:</label>
+                            <textarea id="title-input" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2 text-sm"></textarea>
+                            <div class="flex items-center gap-4 mt-2">
+                                <div class="flex-1"><label for="title-size-slider" class="block text-xs font-medium text-gray-600 mb-1">크기: <span id="title-size-value">3.0rem</span></label><input type="range" id="title-size-slider" min="1" max="6" step="0.1" value="3" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                                <div class="w-16"><label class="block text-xs font-medium text-gray-600 mb-1">색상</label><input type="color" id="title-color-picker" value="#FFFFFF"></div>
+                            </div>
+                        </div>
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <label class="block text-base font-medium text-gray-700 mb-2">본문 수정:</label>
+                            <textarea id="subtitle-input" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2 text-sm"></textarea>
+                            <div class="flex items-center gap-4 mt-2">
+                                <div class="flex-1"><label for="subtitle-size-slider" class="block text-xs font-medium text-gray-600 mb-1">크기: <span id="subtitle-size-value">1.2rem</span></label><input type="range" id="subtitle-size-slider" min="0.5" max="3" step="0.1" value="1.2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                                <div class="w-16"><label class="block text-xs font-medium text-gray-600 mb-1">색상</label><input type="color" id="subtitle-color-picker" value="#FFFFFF"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h3 class="text-base font-medium text-gray-700 mb-2">로고 설정:</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-2">위치</label>
+                                <div id="logo-position-controls" class="grid grid-cols-2 gap-1 rounded-lg bg-gray-200 p-1">
+                                    <div><input type="radio" name="logo-pos" value="tl" id="pos-tl" class="sr-only"><label for="pos-tl" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">좌측 상단</label></div>
+                                    <div><input type="radio" name="logo-pos" value="tr" id="pos-tr" class="sr-only"><label for="pos-tr" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">우측 상단</label></div>
+                                    <div><input type="radio" name="logo-pos" value="bl" id="pos-bl" class="sr-only"><label for="pos-bl" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">좌측 하단</label></div>
+                                    <div><input type="radio" name="logo-pos" value="br" id="pos-br" class="sr-only" checked><label for="pos-br" class="text-center text-xs p-1 rounded-md cursor-pointer transition w-full block">우측 하단</label></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                               <div class="flex-1"> <label class="block text-xs font-medium text-gray-600 mb-2">효과 강도: <span id="logo-effect-value">10px</span></label><input type="range" id="logo-effect-slider" min="0" max="20" step="1" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                               <div class="w-16"><label class="block text-xs font-medium text-gray-600 mb-2">효과 색상</label><input type="color" id="logo-effect-color-picker" value="#FFFFFF"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-lg font-medium text-gray-700 mb-2">최종 작업:</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                             <button id="upload-edited-btn" class="w-full bg-gray-700 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-800 transition duration-300 flex items-center justify-center text-sm">
+                                <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                                편집 업로드
+                            </button>
+                            <button id="export-image-only-btn" class="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition duration-300 flex items-center justify-center text-sm">
+                                 <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg>
+                                이미지만 저장
+                            </button>
+                            <button id="export-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 flex items-center justify-center text-sm">
+                                 <svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a5.5 5.5 0 00-5.5 5.5V13a1.5 1.5 0 003 0V7.5a2.5 2.5 0 015 0V13a4.5 4.5 0 11-9 0V7.5a.5.5 0 011 0V13a3.5 3.5 0 107 0V7.5A1.5 1.5 0 0010.5 6H10a.5.5 0 010-1h.5A2.5 2.5 0 0113 7.5V13a2.5 2.5 0 01-5 0V7.5a.5.5 0 011 0V13a1.5 1.5 0 003 0V7.5A.5.5 0 0010 7h-.5a.5.5 0 01-.5-.5V6a.5.5 0 01.5-.5H10z" /></svg>
+                                PNG로 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="message-box" class="hidden fixed top-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300 z-50">
+                <p id="message-text"></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // DOM Elements
+        const setupSection = document.getElementById('setup-section'),
+            workspace = document.getElementById('workspace'),
+            ideaInput = document.getElementById('idea-input'),
+            referenceInput = document.getElementById('reference-input'),
+            analyzeBtn = document.getElementById('analyze-btn'),
+            resultContainer = document.getElementById('result-container'),
+            generatedImage = document.getElementById('generated-image'),
+            imagePlaceholder = document.getElementById('image-placeholder'),
+            titleContainer = document.getElementById('title-container'),
+            subtitleContainer = document.getElementById('subtitle-container'),
+            textOverlayTop = document.getElementById('text-overlay-top'),
+            textOverlayBottom = document.getElementById('text-overlay-bottom'),
+            promptInputEditable = document.getElementById('prompt-input-editable'),
+            changePromptBtn = document.getElementById('change-prompt-btn'),
+            regenerateImageBtn = document.getElementById('regenerate-image-btn'),
+            titleInput = document.getElementById('title-input'),
+            subtitleInput = document.getElementById('subtitle-input'),
+            exportBtn = document.getElementById('export-btn'),
+            loader = document.getElementById('loader'),
+            messageBox = document.getElementById('message-box'),
+            messageText = document.getElementById('message-text'),
+            imageDropZone = document.getElementById('image-drop-zone'),
+            imageInput = document.getElementById('image-input'),
+            imagePreview = document.getElementById('image-preview'),
+            imageUploadPlaceholder = document.getElementById('image-upload-placeholder'),
+            removeImageBtn = document.getElementById('remove-image-btn'),
+            toggleTextBtn = document.getElementById('toggle-text-btn'),
+            titleSizeSlider = document.getElementById('title-size-slider'),
+            titleSizeValue = document.getElementById('title-size-value'),
+            titleColorPicker = document.getElementById('title-color-picker'),
+            subtitleSizeSlider = document.getElementById('subtitle-size-slider'),
+            subtitleSizeValue = document.getElementById('subtitle-size-value'),
+            subtitleColorPicker = document.getElementById('subtitle-color-picker'),
+            imageVersionsContainer = document.getElementById('image-versions-container'),
+            originalThumbWrapper = document.getElementById('original-thumb-wrapper'),
+            originalThumb = document.getElementById('original-thumb'),
+            editedThumbWrapper = document.getElementById('edited-thumb-wrapper'),
+            editedThumb = document.getElementById('edited-thumb'),
+            editedImageInput = document.getElementById('edited-image-input'),
+            uploadEditedBtn = document.getElementById('upload-edited-btn'),
+            exportImageOnlyBtn = document.getElementById('export-image-only-btn'),
+            logoUploadBtn = document.getElementById('logo-upload-btn'),
+            logoInput = document.getElementById('logo-input'),
+            logoPreviewContainer = document.getElementById('logo-preview-container'),
+            logoPreviewImg = document.getElementById('logo-preview-img'),
+            removeLogoBtn = document.getElementById('remove-logo-btn'),
+            logoOverlay = document.getElementById('logo-overlay'),
+            toggleLogoBtn = document.getElementById('toggle-logo-btn'),
+            logoPositionControls = document.getElementById('logo-position-controls'),
+            logoEffectColorPicker = document.getElementById('logo-effect-color-picker'),
+            logoEffectSlider = document.getElementById('logo-effect-slider'),
+            logoEffectValue = document.getElementById('logo-effect-value');
+
+        let uploadedImageBase64 = null, uploadedImageType = null,
+            originalImageSrc = null, editedImageSrc = null, uploadedLogoSrc = null;
+
+        const apiKey = "";
+        const textModelApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        const imageModelApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+        function showMessage(message) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden', 'opacity-0');
+            setTimeout(() => {
+                messageBox.classList.add('opacity-0');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            const idea = ideaInput.value.trim();
+            if (!idea) { showMessage('아이디어를 입력해주세요.'); return; }
+            setLoadingState(true, '분석 및 생성 중...');
+            try {
+                const reference = referenceInput.value.trim();
+                const userPrompt = `사용자 아이디어: ${idea}` + (reference ? `\n참고 텍스트: ${reference}` : '');
+                const systemPrompt = `당신은 유능한 광고 크리에이티브 디렉터입니다. 사용자의 아이디어, 제공된 참고 자료, 그리고 '업로드된 이미지'를 종합적으로 분석하여, 사실적인 이미지 생성을 위한 한국어 프롬프트, 그리고 광고의 핵심 메시지를 담은 '타이틀'과 이를 보충하는 짧은 '본문'을 한국어로 생성해주세요. 결과는 반드시 다음 JSON 형식으로만 반환해야 합니다: {"image_prompt_korean": "...", "title": "...", "subtitle": "..."}`;
+                const parts = [{ text: userPrompt }];
+                if(uploadedImageBase64) parts.push({ inlineData: { mimeType: uploadedImageType, data: uploadedImageBase64 } });
+
+                const payload = { contents: [{ parts }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" } };
+                const response = await fetch(textModelApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('AI 분석 API 요청에 실패했습니다.');
+
+                const result = await response.json();
+                const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                const { image_prompt_korean, title, subtitle } = jsonResponse;
+
+                promptInputEditable.value = image_prompt_korean;
+                titleInput.value = title;
+                subtitleInput.value = subtitle;
+                textOverlayTop.textContent = title;
+                textOverlayBottom.textContent = subtitle;
+
+                await generateImageFromKorean(image_prompt_korean);
+                workspace.classList.remove('hidden');
+                toggleTextBtn.classList.remove('hidden');
+            } catch (error) {
+                console.error('아이디어 분석 오류:', error);
+                showMessage('아이디어 분석에 실패했습니다. 다시 시도해주세요.');
+                setLoadingState(false);
+            }
+        });
+        
+        async function generateImageFromKorean(koreanPrompt) {
+            setLoadingState(true, '이미지 생성 중...');
+            try {
+                const translateSystemPrompt = `You are a helpful translation assistant. Translate the user's text from Korean to English. The translation should be optimized as a descriptive prompt for an AI image generator. Provide only the translated text as a raw string, with no extra formatting or labels.`;
+                const translatePayload = { contents: [{ parts: [{ text: koreanPrompt }] }], systemInstruction: { parts: [{ text: translateSystemPrompt }] } };
+                const translateResponse = await fetch(textModelApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(translatePayload) });
+                if (!translateResponse.ok) throw new Error('번역 API 요청 실패');
+                const translateResult = await translateResponse.json();
+                const englishPrompt = translateResult.candidates[0].content.parts[0].text;
+                await generateImage(englishPrompt);
+            } catch(error) {
+                console.error("이미지 생성 과정 오류: ", error);
+                showMessage("이미지 생성에 실패했습니다.");
+            } finally {
+                 setLoadingState(false);
+            }
+        }
+
+        async function generateImage(prompt) {
+            imagePlaceholder.classList.add('hidden');
+            generatedImage.classList.add('hidden');
+            loader.classList.remove('hidden');
+            regenerateImageBtn.disabled = true;
+            changePromptBtn.disabled = true;
+            try {
+                const payload = { instances: [{ prompt }], parameters: { "sampleCount": 1 } };
+                const response = await fetch(imageModelApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('이미지 생성 API 요청에 실패했습니다.');
+                const result = await response.json();
+                if (result.predictions && result.predictions[0].bytesBase64Encoded) {
+                    originalImageSrc = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    generatedImage.src = originalImageSrc;
+                    originalThumb.src = originalImageSrc;
+                    generatedImage.classList.remove('hidden');
+                    editedImageSrc = null;
+                    editedThumbWrapper.classList.add('hidden');
+                    setActiveThumbnail('original');
+                    imageVersionsContainer.classList.remove('hidden');
+                } else {
+                    throw new Error('API 응답에서 이미지를 찾을 수 없습니다.');
+                }
+            } catch (error) {
+                console.error('이미지 생성 오류:', error);
+                showMessage('이미지 생성에 실패했습니다. 다시 시도해주세요.');
+                imagePlaceholder.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
+                regenerateImageBtn.disabled = false;
+                changePromptBtn.disabled = false;
+                if(analyzeBtn.disabled) setLoadingState(false);
+            }
+        }
+        
+        changePromptBtn.addEventListener('click', async () => {
+            const idea = ideaInput.value.trim();
+            if (!idea) { showMessage('먼저 아이디어를 입력해주세요.'); return; }
+            changePromptBtn.disabled = true;
+            changePromptBtn.innerHTML = `<div class="loader" style="width:16px; height:16px; border-width:2px;"></div>`;
+            try {
+                const systemPrompt = `You are a creative copywriter. Based on the user's idea, generate a single, new, and creative image generation prompt in Korean. Respond with only the prompt text itself, without any labels or extra text.`;
+                const payload = { contents: [{ parts: [{ text: idea }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
+                const response = await fetch(textModelApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('새 프롬프트 생성 API 요청 실패');
+                const result = await response.json();
+                promptInputEditable.value = result.candidates[0].content.parts[0].text;
+            } catch(error) {
+                console.error("프롬프트 변경 오류: ", error);
+                showMessage("새로운 프롬프트를 생성하는데 실패했습니다.");
+            } finally {
+                 changePromptBtn.disabled = false;
+                 changePromptBtn.innerHTML = `<svg class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.885-.666A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566z" clip-rule="evenodd" /></svg> 바꾸기`;
+            }
+        });
+        
+        regenerateImageBtn.addEventListener('click', async () => { 
+            const prompt = promptInputEditable.value.trim(); 
+            if(prompt) await generateImageFromKorean(prompt); 
+            else showMessage("프롬프트를 입력해주세요."); 
+        });
+
+        function handleReferenceImageFile(file) {
+            if (!file.type.startsWith('image/')) { showMessage('이미지 파일만 업로드할 수 있습니다.'); return; }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result;
+                imagePreview.src = base64String;
+                uploadedImageBase64 = base64String.split(',')[1];
+                uploadedImageType = file.type;
+                imageUploadPlaceholder.classList.add('hidden');
+                imagePreview.classList.remove('hidden');
+                removeImageBtn.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        removeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            uploadedImageBase64 = null; uploadedImageType = null;
+            imageInput.value = ''; imagePreview.classList.add('hidden');
+            removeImageBtn.classList.add('hidden'); imageUploadPlaceholder.classList.remove('hidden');
+        });
+
+        toggleTextBtn.addEventListener('click', () => {
+            const isHidden = titleContainer.classList.toggle('hidden');
+            subtitleContainer.classList.toggle('hidden');
+            toggleTextBtn.textContent = isHidden ? '문구 보이기' : '문구 숨기기';
+        });
+
+        uploadEditedBtn.addEventListener('click', () => editedImageInput.click());
+        editedImageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                 if (!file.type.startsWith('image/')) { showMessage('이미지 파일만 업로드할 수 있습니다.'); return; }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    editedImageSrc = reader.result;
+                    editedThumb.src = editedImageSrc;
+                    generatedImage.src = editedImageSrc;
+                    editedThumbWrapper.classList.remove('hidden');
+                    setActiveThumbnail('edited');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function setActiveThumbnail(active) {
+            originalThumbWrapper.classList.toggle('border-blue-500', active === 'original');
+            originalThumbWrapper.classList.toggle('border-transparent', active !== 'original');
+            editedThumbWrapper.classList.toggle('border-blue-500', active === 'edited');
+            editedThumbWrapper.classList.toggle('border-transparent', active !== 'edited');
+        }
+
+        originalThumbWrapper.addEventListener('click', () => { if (originalImageSrc) { generatedImage.src = originalImageSrc; setActiveThumbnail('original'); } });
+        editedThumbWrapper.addEventListener('click', () => { if (editedImageSrc) { generatedImage.src = editedImageSrc; setActiveThumbnail('edited'); } });
+        
+        function handleLogoFile(file) {
+            if (!file.type.startsWith('image/')) { showMessage('로고는 이미지 파일만 가능합니다.'); return; }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                uploadedLogoSrc = event.target.result;
+                logoOverlay.src = uploadedLogoSrc;
+                logoPreviewImg.src = uploadedLogoSrc;
+                logoOverlay.classList.remove('hidden');
+                toggleLogoBtn.classList.remove('hidden');
+                logoPreviewContainer.classList.remove('hidden');
+                logoUploadBtn.classList.add('hidden');
+                document.querySelector('input[name="logo-pos"][value="br"]').checked = true;
+                logoOverlay.className = 'absolute transition-all duration-300 bottom-4 right-4';
+                logoOverlay.style.cssText += 'max-width: 15%; max-height: 15%;';
+                updateLogoEffect();
+            }
+            reader.readAsDataURL(file);
+        }
+        logoUploadBtn.addEventListener('click', () => logoInput.click());
+        logoInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) handleLogoFile(e.target.files[0]); });
+        logoUploadBtn.addEventListener('dragover', (e) => { e.preventDefault(); logoUploadBtn.classList.add('dragover'); });
+        logoUploadBtn.addEventListener('dragleave', () => logoUploadBtn.classList.remove('dragover'));
+        logoUploadBtn.addEventListener('drop', (e) => { e.preventDefault(); logoUploadBtn.classList.remove('dragover'); if (e.dataTransfer.files.length > 0) handleLogoFile(e.dataTransfer.files[0]); });
+        
+        removeLogoBtn.addEventListener('click', () => {
+            uploadedLogoSrc = null; logoInput.value = '';
+            logoOverlay.src = ''; logoPreviewImg.src = '';
+            logoOverlay.classList.add('hidden');
+            toggleLogoBtn.classList.add('hidden');
+            logoPreviewContainer.classList.add('hidden');
+            logoUploadBtn.classList.remove('hidden');
+        });
+        toggleLogoBtn.addEventListener('click', () => {
+            const isHidden = logoOverlay.classList.toggle('hidden');
+            toggleLogoBtn.textContent = isHidden ? '로고 보이기' : '로고 숨기기';
+        });
+        logoPositionControls.addEventListener('change', (e) => {
+            if (e.target.name === 'logo-pos') {
+                const position = e.target.value;
+                const baseClasses = 'absolute transition-all duration-300';
+                const posClasses = { tl: 'top-4 left-4', tr: 'top-4 right-4', bl: 'bottom-4 left-4', br: 'bottom-4 right-4' };
+                logoOverlay.className = `${baseClasses} ${posClasses[position]}`;
+                logoOverlay.style.cssText += 'max-width: 15%; max-height: 15%;';
+            }
+        });
+        logoEffectColorPicker.addEventListener('input', updateLogoEffect);
+        logoEffectSlider.addEventListener('input', updateLogoEffect);
+        function updateLogoEffect() {
+            const color = logoEffectColorPicker.value;
+            const size = logoEffectSlider.value;
+            logoEffectValue.textContent = `${size}px`;
+            logoOverlay.style.filter = size > 0 ? `drop-shadow(0 0 ${size / 2}px ${color}) drop-shadow(0 0 ${size}px ${color})` : 'none';
+        }
+
+        exportImageOnlyBtn.addEventListener('click', () => {
+            if (!generatedImage.src || generatedImage.classList.contains('hidden')) { showMessage('먼저 이미지를 생성해주세요.'); return; }
+            const wereTextsVisible = !titleContainer.classList.contains('hidden');
+            const wasLogoVisible = uploadedLogoSrc && !logoOverlay.classList.contains('hidden');
+            titleContainer.classList.add('hidden'); subtitleContainer.classList.add('hidden');
+            if (wasLogoVisible) logoOverlay.classList.add('hidden');
+
+            html2canvas(resultContainer, { useCORS: true, allowTaint: true, backgroundColor: null }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'ai-ad-image-only.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                if (wereTextsVisible) { titleContainer.classList.remove('hidden'); subtitleContainer.classList.remove('hidden'); }
+                if (wasLogoVisible) logoOverlay.classList.remove('hidden');
+            });
+        });
+
+        imageDropZone.addEventListener('click', () => imageInput.click());
+        imageDropZone.addEventListener('dragover', (e) => { e.preventDefault(); imageDropZone.classList.add('dragover'); });
+        imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('dragover'));
+        imageDropZone.addEventListener('drop', (e) => { e.preventDefault(); imageDropZone.classList.remove('dragover'); if (e.dataTransfer.files.length > 0) handleReferenceImageFile(e.dataTransfer.files[0]); });
+        imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleReferenceImageFile(e.target.files[0]); });
+        
+        titleSizeSlider.addEventListener('input', (e) => { const size = e.target.value; textOverlayTop.style.fontSize = `${size}rem`; titleSizeValue.textContent = `${size}rem`; });
+        subtitleSizeSlider.addEventListener('input', (e) => { const size = e.target.value; textOverlayBottom.style.fontSize = `${size}rem`; subtitleSizeValue.textContent = `${size}rem`; });
+        titleInput.addEventListener('input', () => { textOverlayTop.textContent = titleInput.value; });
+        subtitleInput.addEventListener('input', () => { textOverlayBottom.textContent = subtitleInput.value; });
+        titleColorPicker.addEventListener('input', (e) => { textOverlayTop.style.color = e.target.value; });
+        subtitleColorPicker.addEventListener('input', (e) => { textOverlayBottom.style.color = e.target.value; });
+        
+        function setLoadingState(isLoading, message = '아이디어 분석 및 생성') {
+            analyzeBtn.disabled = isLoading;
+            const svgIcon = `<svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>`;
+            analyzeBtn.innerHTML = isLoading ? `<div class="loader" style="width:24px; height:24px; border-width:3px;"></div><span class="ml-2">${message}...</span>` : `${svgIcon} ${message}`;
+            if(isLoading) { imagePlaceholder.classList.add('hidden'); loader.classList.remove('hidden'); }
+            else { if(generatedImage.classList.contains('hidden')){ imagePlaceholder.classList.remove('hidden'); } loader.classList.add('hidden'); }
+        }
+        exportBtn.addEventListener('click', () => {
+            if (!generatedImage.src || generatedImage.classList.contains('hidden')) { showMessage('먼저 이미지를 생성해주세요.'); return; }
+            
+            const containers = document.querySelectorAll('.text-container');
+            containers.forEach(c => c.style.borderColor = 'transparent');
+            
+            html2canvas(resultContainer, { useCORS: true, allowTaint: true, backgroundColor: null }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'ai-ad-creative.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+
+        // Draggable and Resizable Logic
+        function initDraggableResizable(container) {
+            const content = container.querySelector('.text-content');
+            const handle = container.querySelector('.resize-handle');
+            const parent = container.parentElement;
+
+            let isDragging = false;
+            let isResizing = false;
+            let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+            content.addEventListener('mousedown', (e) => {
+                if (e.target !== handle) {
+                    e.preventDefault();
+                    isDragging = true;
+                    container.classList.add('dragging');
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = container.offsetLeft;
+                    startTop = container.offsetTop;
+                    document.addEventListener('mousemove', onMouseMoveDrag);
+                    document.addEventListener('mouseup', onMouseUpDrag);
+                }
+            });
+
+            function onMouseMoveDrag(e) {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+                if (newLeft + container.offsetWidth > parent.clientWidth) newLeft = parent.clientWidth - container.offsetWidth;
+                if (newTop + container.offsetHeight > parent.clientHeight) newTop = parent.clientHeight - container.offsetHeight;
+
+                container.style.left = `${newLeft}px`;
+                container.style.top = `${newTop}px`;
+            }
+
+            function onMouseUpDrag() {
+                isDragging = false;
+                container.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMouseMoveDrag);
+                document.removeEventListener('mouseup', onMouseUpDrag);
+            }
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isResizing = true;
+                container.classList.add('resizing');
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = container.offsetWidth;
+                startHeight = container.offsetHeight;
+                document.addEventListener('mousemove', onMouseMoveResize);
+                document.addEventListener('mouseup', onMouseUpResize);
+            });
+
+            function onMouseMoveResize(e) {
+                if (!isResizing) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                let newWidth = startWidth + dx;
+                let newHeight = startHeight + dy;
+
+                if (container.offsetLeft + newWidth > parent.clientWidth) newWidth = parent.clientWidth - container.offsetLeft;
+                if (container.offsetTop + newHeight > parent.clientHeight) newHeight = parent.clientHeight - container.offsetTop;
+
+                if (newWidth > 50) container.style.width = `${newWidth}px`;
+                if (newHeight > 30) container.style.height = `${newHeight}px`;
+            }
+
+            function onMouseUpResize() {
+                isResizing = false;
+                container.classList.remove('resizing');
+                document.removeEventListener('mousemove', onMouseMoveResize);
+                document.removeEventListener('mouseup', onMouseUpResize);
+            }
+        }
+
+        initDraggableResizable(titleContainer);
+        initDraggableResizable(subtitleContainer);
+    </script>
+</body>
+</html>
+
