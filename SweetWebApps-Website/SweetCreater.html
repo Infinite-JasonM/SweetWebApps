@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sweet Creator - Sweet Ai Ad Creater! AI 어시스턴트 광고 생성기</title>
+    <title>Sweet Creator - Sweet Ai Ad Creater!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -531,9 +531,23 @@
             initDraggableResizable(subtitleContainer);
             checkAdminMode();
 
-            if (sessionStorage.getItem('userApiKey') && sessionStorage.getItem('userProfile')) {
+            const userProfileData = sessionStorage.getItem('userProfile');
+            const userApiKey = sessionStorage.getItem('userApiKey');
+
+            if (userApiKey && userProfileData) {
                 showMainApp();
+            } else if (userProfileData && !userApiKey) {
+                // Logged in with Google, but API key is missing
+                const user = JSON.parse(userProfileData);
+                mainContent.classList.add('hidden');
+                userProfile.classList.remove('hidden');
+                userName.textContent = user.name;
+                userAvatar.src = user.picture;
+                loginWall.classList.add('hidden');
+                apiKeyModal.classList.remove('hidden');
             } else {
+                // Not logged in at all
+                showLoginWall();
                  google.accounts.id.initialize({
                     client_id: "355134313994-lp5elhmitosr277i93l71cnoe4gsa6ar.apps.googleusercontent.com", // 중요: 실제 클라이언트 ID로 교체해주세요.
                     callback: handleCredentialResponse
