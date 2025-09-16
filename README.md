@@ -12,5 +12,4 @@
       또한 사이트의 SweetWebApps 를 사용하실 경우, 춮처를 꼭 남겨주세요.
    
    // 홍보용 이미지 생성기, SweetAiAdCreater! 사용하러 가기 <br>
-   👉  <a href="[/SweetWebApps/SweetAiAdCreater.html](https://infinite-jasonm.github.io/SweetWebApps/SweetAiAdCreater.html)">SweetAiAdCreater! </a>
-      
+   👉  <a href="./SweetAiAdCreater.html"> SweetAiAdCreater! </a>
